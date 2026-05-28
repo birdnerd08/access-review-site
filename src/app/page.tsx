@@ -26,7 +26,7 @@ export default function HomePage() {
             Browse stadiums
           </Link>
           <Link
-            href="/stadiums"
+            href="/reviews/new"
             className="border border-white text-white font-semibold px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors"
           >
             Add a review
@@ -147,7 +147,7 @@ export default function HomePage() {
           tickets. Reviews take about 3–5 minutes.
         </p>
         <Link
-          href="/stadiums"
+          href="/reviews/new"
           className="bg-white text-blue-700 font-semibold px-6 py-3 rounded-lg hover:bg-blue-50 transition-colors inline-block"
         >
           Write a review
