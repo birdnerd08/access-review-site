@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import StadiumCard from "@/components/StadiumCard";
 import SearchFilters from "@/components/SearchFilters";
-import { stadiums } from "@/lib/sample-data";
-import { VenueType } from "@/lib/types";
+import { getAllStadiums } from "@/lib/db";
+import { StadiumSummary, VenueType } from "@/lib/types";
 
 const stateNames: Record<string, string> = {
   AL: "alabama", AK: "alaska", AZ: "arizona", AR: "arkansas", CA: "california",
@@ -21,8 +21,17 @@ const stateNames: Record<string, string> = {
 };
 
 export default function StadiumsPage() {
+  const [stadiums, setStadiums] = useState<StadiumSummary[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [venueType, setVenueType] = useState<VenueType | "">("");
+
+  useEffect(() => {
+    getAllStadiums().then((data) => {
+      setStadiums(data);
+      setLoading(false);
+    });
+  }, []);
 
   const filtered = stadiums.filter((s) => {
     const q = search.toLowerCase();
@@ -53,10 +62,26 @@ export default function StadiumsPage() {
         onVenueTypeChange={setVenueType}
       />
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="flex flex-col gap-6">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="border border-gray-200 rounded-xl p-6 bg-white animate-pulse"
+            >
+              <div className="h-6 bg-gray-200 rounded w-1/3 mb-3" />
+              <div className="h-4 bg-gray-100 rounded w-1/4 mb-4" />
+              <div className="h-4 bg-gray-100 rounded w-full mb-2" />
+              <div className="h-4 bg-gray-100 rounded w-3/4" />
+            </div>
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="text-center py-16 border border-dashed border-gray-200 rounded-xl">
           <p className="text-gray-500 mb-1">No stadiums match your search.</p>
-          <p className="text-sm text-gray-400">Try a different name, city, state, or venue type.</p>
+          <p className="text-sm text-gray-400">
+            Try a different name, city, state, or venue type.
+          </p>
         </div>
       ) : (
         <div className="flex flex-col gap-6">

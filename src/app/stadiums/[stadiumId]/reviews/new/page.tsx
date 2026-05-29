@@ -6,7 +6,7 @@ import Link from "next/link";
 import { AccessNeed, EventType, Recommendation } from "@/lib/types";
 import { stadiums } from "@/lib/sample-data";
 import { getStadiumBySlug } from "@/lib/utils";
-
+import { submitReview } from "@/lib/db";
 const ACCESS_NEEDS: AccessNeed[] = [
   "Power wheelchair",
   "Manual wheelchair",
@@ -76,6 +76,7 @@ export default function NewReviewPage() {
   const router = useRouter();
   const stadiumId = params.stadiumId as string;
   const stadium = getStadiumBySlug(stadiums, stadiumId);
+  const [submitting, setSubmitting] = useState(false);
 
   const [form, setForm] = useState<FormData>(emptyForm);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -122,11 +123,29 @@ export default function NewReviewPage() {
     return Object.keys(newErrors).length === 0;
   }
 
-  function handleSubmit() {
+async function handleSubmit() {
     if (!validate()) return;
-    // Phase 3: this will write to Supabase instead
-    console.log("Review submitted:", form);
-    setSubmitted(true);
+    setSubmitting(true);
+
+    const success = await submitReview(stadiumId, {
+      eventType: form.eventType as string,
+      accessNeeds: form.accessNeeds,
+      overallUsabilityRating: form.overallUsabilityRating,
+      whatWorkedWell: form.whatWorkedWell,
+      barriersOrHardMoments: form.barriersOrHardMoments,
+      specificDetailToKnow: form.specificDetailToKnow,
+      whoItWorksFor: form.whoItWorksFor,
+      wouldRecommend: form.wouldRecommend as string,
+      seatSection: form.seatSection,
+    });
+
+    setSubmitting(false);
+
+    if (success) {
+      setSubmitted(true);
+    } else {
+      alert("Something went wrong submitting your review. Please try again.");
+    }
   }
 
   if (submitted) {
@@ -412,13 +431,14 @@ export default function NewReviewPage() {
 
         {/* Submit */}
         <div className="pt-2">
-          <button
-            type="button"
-            onClick={handleSubmit}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors text-sm"
-          >
-            Submit review
-          </button>
+<button
+  type="button"
+  onClick={handleSubmit}
+  disabled={submitting}
+  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-colors text-sm"
+>
+  {submitting ? "Submitting..." : "Submit review"}
+</button>
           <p className="text-xs text-gray-400 text-center mt-3">
             Your review helps other disabled fans make informed decisions.
           </p>

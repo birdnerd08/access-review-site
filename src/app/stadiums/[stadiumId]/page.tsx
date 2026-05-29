@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { stadiums, reviews } from "@/lib/sample-data";
-import { getStadiumBySlug, getReviewsByStadiumId } from "@/lib/utils";
+import { getStadiumBySlug, getReviewsByStadiumId } from "@/lib/db";
 import ReviewCard from "@/components/ReviewCard";
 import AccessNeedTags from "@/components/AccessNeedTags";
 import RatingDisplay from "@/components/RatingDisplay";
@@ -12,13 +11,12 @@ interface PageProps {
 
 export default async function StadiumDetailPage({ params }: PageProps) {
   const { stadiumId } = await params;
-  const stadium = getStadiumBySlug(stadiums, stadiumId);
+  const stadium = await getStadiumBySlug(stadiumId);
 
   if (!stadium) notFound();
 
-  const stadiumReviews = getReviewsByStadiumId(reviews, stadium.id);
+  const stadiumReviews = await getReviewsByStadiumId(stadium.id);
 
-  // Collect all unique access needs across reviews
   const allAccessNeeds = [
     ...new Set(stadiumReviews.flatMap((r) => r.accessNeeds)),
   ];
@@ -26,7 +24,6 @@ export default async function StadiumDetailPage({ params }: PageProps) {
   return (
     <main className="max-w-4xl mx-auto px-4 py-10">
 
-      {/* Back link */}
       <Link
         href="/stadiums"
         className="text-sm text-blue-600 hover:underline mb-6 inline-block"
@@ -34,7 +31,6 @@ export default async function StadiumDetailPage({ params }: PageProps) {
         ← All stadiums
       </Link>
 
-      {/* Stadium header */}
       <div className="mb-8">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
@@ -45,13 +41,11 @@ export default async function StadiumDetailPage({ params }: PageProps) {
           </div>
           <RatingDisplay rating={stadium.averageRating} size="lg" />
         </div>
-
         {stadium.description && (
           <p className="text-gray-600 mt-4">{stadium.description}</p>
         )}
       </div>
 
-      {/* Best for / Watch out */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
         <div className="bg-green-50 border border-green-100 rounded-xl p-4">
           <p className="text-sm font-semibold text-green-700 mb-1">Best for</p>
@@ -63,7 +57,6 @@ export default async function StadiumDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Access needs represented */}
       {allAccessNeeds.length > 0 && (
         <div className="mb-8">
           <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">
@@ -73,7 +66,6 @@ export default async function StadiumDetailPage({ params }: PageProps) {
         </div>
       )}
 
-      {/* Common strengths */}
       {stadium.strengths.length > 0 && (
         <div className="mb-8">
           <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">
@@ -90,7 +82,6 @@ export default async function StadiumDetailPage({ params }: PageProps) {
         </div>
       )}
 
-      {/* Common concerns */}
       {stadium.concerns.length > 0 && (
         <div className="mb-8">
           <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">
@@ -107,7 +98,6 @@ export default async function StadiumDetailPage({ params }: PageProps) {
         </div>
       )}
 
-      {/* Reviews */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-gray-900">
@@ -137,7 +127,6 @@ export default async function StadiumDetailPage({ params }: PageProps) {
         )}
       </div>
 
-      {/* Bottom CTA */}
       <div className="border border-blue-100 bg-blue-50 rounded-xl p-6 text-center">
         <p className="text-gray-700 font-medium mb-1">
           Have you been to {stadium.name}?
