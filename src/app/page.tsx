@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { stadiums } from "@/lib/sample-data";
+import { getAllStadiums } from "@/lib/db";
 import StadiumCard from "@/components/StadiumCard";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const stadiums = await getAllStadiums();
   const featured = stadiums.slice(0, 2);
 
   return (
@@ -46,35 +47,14 @@ export default function HomePage() {
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
-            {
-              q: "Can I buy accessible seats without calling multiple times?",
-              icon: "🎟️",
-            },
-            {
-              q: "Will the sightline still work when everyone stands?",
-              icon: "👁️",
-            },
-            {
-              q: "How far is the bathroom from my seat?",
-              icon: "🚻",
-            },
-            {
-              q: "How bad are elevators and exits after the event?",
-              icon: "🛗",
-            },
-            {
-              q: "Is there shade, cooling, or a lower-crowd route?",
-              icon: "🌤️",
-            },
-            {
-              q: "Is a companion seat directly next to me, not a row away?",
-              icon: "🤝",
-            },
+            { q: "Can I buy accessible seats without calling multiple times?", icon: "🎟️" },
+            { q: "Will the sightline still work when everyone stands?", icon: "👁️" },
+            { q: "How far is the bathroom from my seat?", icon: "🚻" },
+            { q: "How bad are elevators and exits after the event?", icon: "🛗" },
+            { q: "Is there shade, cooling, or a lower-crowd route?", icon: "🌤️" },
+            { q: "Is a companion seat directly next to me, not a row away?", icon: "🤝" },
           ].map(({ q, icon }) => (
-            <div
-              key={q}
-              className="flex items-start gap-3 bg-gray-50 rounded-xl p-4"
-            >
+            <div key={q} className="flex items-start gap-3 bg-gray-50 rounded-xl p-4">
               <span className="text-2xl">{icon}</span>
               <p className="text-sm text-gray-700">{q}</p>
             </div>
@@ -118,24 +98,23 @@ export default function HomePage() {
       </section>
 
       {/* Featured reviews */}
-      <section className="max-w-4xl mx-auto px-4 py-16">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">
-            Recent stadium reviews
-          </h2>
-          <Link
-            href="/stadiums"
-            className="text-sm text-blue-600 hover:underline"
-          >
-            See all →
-          </Link>
-        </div>
-        <div className="flex flex-col gap-6">
-          {featured.map((stadium) => (
-            <StadiumCard key={stadium.id} stadium={stadium} />
-          ))}
-        </div>
-      </section>
+      {featured.length > 0 && (
+        <section className="max-w-4xl mx-auto px-4 py-16">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Recent stadium reviews
+            </h2>
+            <Link href="/stadiums" className="text-sm text-blue-600 hover:underline">
+              See all →
+            </Link>
+          </div>
+          <div className="flex flex-col gap-6">
+            {featured.map((stadium) => (
+              <StadiumCard key={stadium.id} stadium={stadium} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Contribute CTA */}
       <section className="bg-blue-700 text-white px-4 py-16 text-center">
