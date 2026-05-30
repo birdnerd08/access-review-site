@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getAllStadiums } from "@/lib/db";
-import { StadiumSummary, AccessNeed, EventType, Recommendation } from "@/lib/types";
+import { StadiumSummary } from "@/lib/types";
 
 const stateNames: Record<string, string> = {
   AL: "alabama", AK: "alaska", AZ: "arizona", AR: "arkansas", CA: "california",
@@ -19,81 +19,12 @@ const stateNames: Record<string, string> = {
   WV: "west virginia", WI: "wisconsin", WY: "wyoming", DC: "district of columbia",
 };
 
-const ACCESS_NEEDS: AccessNeed[] = [
-  "Power wheelchair",
-  "Manual wheelchair",
-  "Limited stamina / fatigue",
-  "Chronic pain / sitting tolerance",
-  "Heat sensitivity",
-  "Mobility aid",
-  "Companion / caregiver",
-  "Sensory sensitivity",
-  "Service animal",
-];
-
-const EVENT_TYPES: EventType[] = [
-  "Football game",
-  "Baseball game",
-  "Basketball game",
-  "Concert",
-  "College sports",
-  "Other stadium event",
-];
-
-const RATING_LABELS: Record<number, string> = {
-  1: "Not usable",
-  2: "Difficult",
-  3: "Usable with issues",
-  4: "Mostly usable",
-  5: "Very usable",
-};
-
-interface FormData {
-  eventType: EventType | "";
-  accessNeeds: AccessNeed[];
-  overallUsabilityRating: number;
-  whatWorkedWell: string;
-  barriersOrHardMoments: string;
-  specificDetailToKnow: string;
-  whoItWorksFor: string;
-  wouldRecommend: Recommendation | "";
-  seatSection: string;
-}
-
-interface FormErrors {
-  eventType?: string;
-  accessNeeds?: string;
-  overallUsabilityRating?: string;
-  whatWorkedWell?: string;
-  barriersOrHardMoments?: string;
-  specificDetailToKnow?: string;
-  whoItWorksFor?: string;
-  wouldRecommend?: string;
-}
-
-const emptyForm: FormData = {
-  eventType: "",
-  accessNeeds: [],
-  overallUsabilityRating: 0,
-  whatWorkedWell: "",
-  barriersOrHardMoments: "",
-  specificDetailToKnow: "",
-  whoItWorksFor: "",
-  wouldRecommend: "",
-  seatSection: "",
-};
-
 export default function SelectStadiumPage() {
   const router = useRouter();
   const [stadiums, setStadiums] = useState<StadiumSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState("");
   const [search, setSearch] = useState("");
-  const [step, setStep] = useState<"select" | "form">("select");
-  const [form, setForm] = useState<FormData>(emptyForm);
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     getAllStadiums().then((data) => {
@@ -119,30 +50,6 @@ export default function SelectStadiumPage() {
     router.push(`/stadiums/${selected}/reviews/new`);
   }
 
-  if (submitted) {
-    const stadium = stadiums.find((s) => s.slug === selected);
-    return (
-      <main className="max-w-2xl mx-auto px-4 py-10 text-center">
-        <div className="bg-green-50 border border-green-200 rounded-xl p-8">
-          <p className="text-4xl mb-4">✓</p>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Thanks for your review
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Your experience helps other disabled fans plan their visit
-            {stadium ? ` to ${stadium.name}` : ""}.
-          </p>
-          
-            href="/stadiums"
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-6 py-2 rounded-lg transition-colors inline-block"
-          >
-            Browse all stadiums
-          </a>
-        </div>
-      </main>
-    );
-  }
-
   return (
     <main className="max-w-2xl mx-auto px-4 py-10">
       <h1 className="text-2xl font-bold text-gray-900 mb-2">
@@ -152,7 +59,6 @@ export default function SelectStadiumPage() {
         Select the stadium you visited to get started.
       </p>
 
-      {/* Search */}
       <div className="relative mb-4">
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
           🔍
@@ -178,7 +84,6 @@ export default function SelectStadiumPage() {
         )}
       </div>
 
-      {/* Stadium list */}
       <div className="flex flex-col gap-3 mb-6">
         {loading ? (
           <div className="flex flex-col gap-3">
@@ -194,7 +99,9 @@ export default function SelectStadiumPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-10 border border-dashed border-gray-200 rounded-xl">
-            <p className="text-gray-500 text-sm">No stadiums found for "{search}".</p>
+            <p className="text-gray-500 text-sm">
+              No stadiums found for &quot;{search}&quot;.
+            </p>
             <p className="text-xs text-gray-400 mt-1">
               Try a different name, city, or state.
             </p>
