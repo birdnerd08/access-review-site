@@ -166,3 +166,100 @@ export async function submitReview(
 
   return true;
 }
+export async function submitStadiumRequest(request: {
+  name: string;
+  city: string;
+  state: string;
+  venuetype: string;
+}): Promise<boolean> {
+  const { error } = await supabase.from("stadium_requests").insert({
+    name: request.name,
+    city: request.city,
+    state: request.state,
+    venue_type: request.venuetype,
+    status: "pending",
+  });
+
+  if (error) {
+    console.error("Error submitting stadium request:", error);
+    return false;
+  }
+
+  return true;
+}
+export async function getStadiumByGooglePlaceId(
+  googlePlaceId: string
+): Promise<StadiumSummary | null> {
+  const { data, error } = await supabase
+    .from("stadiums")
+    .select("*")
+    .eq("google_place_id", googlePlaceId)
+    .single();
+
+  if (error) return null;
+
+  return {
+    id: data.id,
+    slug: data.slug,
+    name: data.name,
+    city: data.city,
+    state: data.state,
+    venueType: data.venue_type,
+    description: data.description,
+    officialAccessibilityUrl: data.official_accessibility_url,
+    averageRating: data.average_rating,
+    reviewCount: data.review_count,
+    summary: data.summary ?? "",
+    tags: data.tags ?? [],
+    strengths: data.strengths ?? [],
+    concerns: data.concerns ?? [],
+    reviewerContext: data.reviewer_context ?? "",
+    seatArea: data.seat_area,
+    bestFor: data.best_for ?? "",
+    watchOut: data.watch_out ?? "",
+  };
+}
+
+export async function addStadiumFromGooglePlaces(place: {
+  googlePlaceId: string;
+  name: string;
+  city: string;
+  state: string;
+  venueType: string;
+}): Promise<string | null> {
+  // Check if already exists
+  const existing = await getStadiumByGooglePlaceId(place.googlePlaceId);
+  if (existing) return existing.slug;
+
+  const slug = place.name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  const { error } = await supabase.from("stadiums").insert({
+    id: slug,
+    slug,
+    name: place.name,
+    city: place.city,
+    state: place.state,
+    state_name: "",
+    venue_type: place.venueType,
+    google_place_id: place.googlePlaceId,
+    average_rating: 0,
+    review_count: 0,
+    summary: "",
+    tags: [],
+    strengths: [],
+    concerns: [],
+    best_for: "",
+    watch_out: "",
+    reviewer_context: "",
+  });
+
+  if (error) {
+    console.error("Error adding stadium:", error);
+    return null;
+  }
+
+  return slug;
+}
