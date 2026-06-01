@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getAllStadiums, addStadiumFromGooglePlaces } from "@/lib/db";
-import { StadiumSummary, VenueType } from "@/lib/types";
+import { StadiumSummary } from "@/lib/types";
 
 const stateNames: Record<string, string> = {
   AL: "alabama", AK: "alaska", AZ: "arizona", AR: "arkansas", CA: "california",
@@ -25,6 +25,7 @@ interface GooglePlace {
   address: string;
   city: string;
   state: string;
+  venueType: string;
 }
 
 export default function SelectStadiumPage() {
@@ -82,9 +83,10 @@ export default function SelectStadiumPage() {
     );
   });
 
-  // Filter out Google results already in our database
   const newGoogleResults = googleResults.filter(
-    (g) => !stadiums.some((s) => s.name.toLowerCase() === g.name.toLowerCase())
+    (g) => !stadiums.some(
+      (s) => s.name.toLowerCase() === g.name.toLowerCase()
+    )
   );
 
   async function handleSelectGoogle(place: GooglePlace) {
@@ -94,7 +96,7 @@ export default function SelectStadiumPage() {
       name: place.name,
       city: place.city,
       state: place.state,
-      venueType: "Other",
+      venueType: place.venueType,
     });
     setAdding(false);
     if (slug) {
@@ -248,7 +250,7 @@ export default function SelectStadiumPage() {
             </div>
           )}
 
-          {/* Initial state — no search yet */}
+          {/* Initial state */}
           {!search && !loadingStadiums && localFiltered.length === 0 && (
             <div className="text-center py-10 border border-dashed border-gray-200 rounded-xl">
               <p className="text-gray-500 text-sm">

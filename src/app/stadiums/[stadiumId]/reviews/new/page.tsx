@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { AccessNeed, EventType, Recommendation } from "@/lib/types";
-import { stadiums } from "@/lib/sample-data";
-import { getStadiumBySlug } from "@/lib/utils";
+import { getStadiumBySlug } from "@/lib/db";
 import { submitReview } from "@/lib/db";
+import { useState, useEffect } from "react";
+import { StadiumSummary } from "@/lib/types";
 const ACCESS_NEEDS: AccessNeed[] = [
   "Power wheelchair",
   "Manual wheelchair",
@@ -75,7 +76,10 @@ export default function NewReviewPage() {
   const params = useParams();
   const router = useRouter();
   const stadiumId = params.stadiumId as string;
-  const stadium = getStadiumBySlug(stadiums, stadiumId);
+  const [stadium, setStadium] = useState<StadiumSummary | null>(null);
+useEffect(() => {
+  getStadiumBySlug(stadiumId).then((data) => setStadium(data));
+}, [stadiumId]);
   const [submitting, setSubmitting] = useState(false);
 
   const [form, setForm] = useState<FormData>(emptyForm);

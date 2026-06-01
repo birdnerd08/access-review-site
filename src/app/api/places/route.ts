@@ -1,5 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 
+function mapGoogleTypeToVenueType(types: string[]): string {
+  if (types.includes("stadium")) {
+    return "Football Stadium";
+  }
+  if (types.includes("baseball_stadium")) {
+    return "Baseball Stadium";
+  }
+  if (types.includes("basketball_arena")) {
+    return "Basketball / Concert Arena";
+  }
+  if (
+    types.includes("university") ||
+    types.includes("school") ||
+    types.includes("college")
+  ) {
+    return "College Stadium";
+  }
+  return "Other";
+}
+
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get("query");
 
@@ -23,6 +43,7 @@ export async function GET(request: NextRequest) {
       address: p.formatted_address,
       city: extractCity(p.address_components ?? []),
       state: extractState(p.address_components ?? []),
+      venueType: mapGoogleTypeToVenueType(p.types ?? []),
     }));
 
     return NextResponse.json({ places });
@@ -33,9 +54,7 @@ export async function GET(request: NextRequest) {
 }
 
 function extractCity(components: any[]): string {
-  const city = components.find((c) =>
-    c.types.includes("locality")
-  );
+  const city = components.find((c) => c.types.includes("locality"));
   return city?.long_name ?? "";
 }
 

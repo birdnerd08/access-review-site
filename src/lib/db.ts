@@ -227,14 +227,40 @@ export async function addStadiumFromGooglePlaces(place: {
   state: string;
   venueType: string;
 }): Promise<string | null> {
-  // Check if already exists
+  // Check if already exists by Google Place ID
   const existing = await getStadiumByGooglePlaceId(place.googlePlaceId);
   if (existing) return existing.slug;
 
-  const slug = place.name
+  // Check if already exists by name match
+  const { data: nameMatch } = await supabase
+    .from("stadiums")
+    .select("slug")
+    .ilike("name", place.name)
+    .single();
+
+  if (nameMatch) return nameMatch.slug;
+
+  // Generate base slug
+  const baseSlug = place.name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+
+  // Check for slug collision and add city suffix if needed
+  let slug = baseSlug;
+  const { data: slugMatch } = await supabase
+    .from("stadiums")
+    .select("slug")
+    .eq("slug", slug)
+    .single();
+
+  if (slugMatch) {
+    const citySlug = place.city
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    slug = `${baseSlug}-${citySlug}`;
+  }
 
   const { error } = await supabase.from("stadiums").insert({
     id: slug,
