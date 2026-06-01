@@ -4,6 +4,7 @@ import { getStadiumBySlug, getReviewsByStadiumId } from "@/lib/db";
 import ReviewCard from "@/components/ReviewCard";
 import AccessNeedTags from "@/components/AccessNeedTags";
 import RatingDisplay from "@/components/RatingDisplay";
+import StadiumDetailMap from "@/components/StadiumDetailMap";
 
 interface PageProps {
   params: Promise<{ stadiumId: string }>;
@@ -55,6 +56,7 @@ export default async function StadiumDetailPage({ params }: PageProps) {
           <p className="text-gray-600 mt-4">{stadium.description}</p>
         )}
       </div>
+      <StadiumDetailMap stadium={stadium} />
 
       {/* No reviews yet — new stadium state */}
       {!hasReviews && (

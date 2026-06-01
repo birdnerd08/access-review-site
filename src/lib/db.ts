@@ -241,10 +241,29 @@ export async function addStadiumFromGooglePlaces(place: {
   city: string;
   state: string;
   venueType: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }): Promise<string | null> {
   // Check if already exists by Google Place ID
   const existing = await getStadiumByGooglePlaceId(place.googlePlaceId);
-  if (existing) return existing.slug;
+
+if (existing) {
+  if (
+    (existing.latitude == null || existing.longitude == null) &&
+    place.latitude != null &&
+    place.longitude != null
+  ) {
+    await supabase
+      .from("stadiums")
+      .update({
+        latitude: place.latitude,
+        longitude: place.longitude,
+      })
+      .eq("slug", existing.slug);
+  }
+
+  return existing.slug;
+}
 
   // Check if already exists by name match
   const { data: nameMatch } = await supabase
@@ -253,7 +272,20 @@ export async function addStadiumFromGooglePlaces(place: {
     .ilike("name", place.name)
     .single();
 
-  if (nameMatch) return nameMatch.slug;
+  if (nameMatch) {
+  if (place.latitude != null && place.longitude != null) {
+    await supabase
+      .from("stadiums")
+      .update({
+        google_place_id: place.googlePlaceId,
+        latitude: place.latitude,
+        longitude: place.longitude,
+      })
+      .eq("slug", nameMatch.slug);
+  }
+
+  return nameMatch.slug;
+}
 
   // Generate base slug
   const baseSlug = place.name
@@ -287,6 +319,8 @@ export async function addStadiumFromGooglePlaces(place: {
     venue_type: place.venueType,
     google_place_id: place.googlePlaceId,
     average_rating: 0,
+    latitude: place.latitude ?? null,
+    longitude: place.longitude ?? null,
     review_count: 0,
     summary: "",
     tags: [],

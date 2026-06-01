@@ -26,6 +26,8 @@ interface GooglePlace {
   city: string;
   state: string;
   venueType: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export default function SelectStadiumPage() {
@@ -90,21 +92,32 @@ export default function SelectStadiumPage() {
   );
 
   async function handleSelectGoogle(place: GooglePlace) {
-    setAdding(true);
-    const slug = await addStadiumFromGooglePlaces({
-      googlePlaceId: place.googlePlaceId,
-      name: place.name,
-      city: place.city,
-      state: place.state,
-      venueType: place.venueType,
-    });
-    setAdding(false);
-    if (slug) {
-      router.push(`/stadiums/${slug}/reviews/new`);
-    } else {
-      alert("Something went wrong. Please try again.");
-    }
+  setAdding(true);
+
+  console.log("Selected Google place:", place);
+  console.log("Selected Google place coordinates:", {
+    latitude: place.latitude,
+    longitude: place.longitude,
+  });
+
+  const slug = await addStadiumFromGooglePlaces({
+    googlePlaceId: place.googlePlaceId,
+    name: place.name,
+    city: place.city,
+    state: place.state,
+    venueType: place.venueType,
+    latitude: place.latitude ?? null,
+    longitude: place.longitude ?? null,
+  });
+
+  setAdding(false);
+
+  if (slug) {
+    router.push(`/stadiums/${slug}/reviews/new`);
+  } else {
+    alert("Something went wrong. Please try again.");
   }
+}
 
   function handleSelectLocal(slug: string) {
     router.push(`/stadiums/${slug}/reviews/new`);
