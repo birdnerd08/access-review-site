@@ -11,7 +11,16 @@ export async function getAllStadiums(): Promise<StadiumSummary[]> {
     console.error("Error fetching stadiums:", error);
     return [];
   }
-
+console.log(
+  "stadium coordinate debug:",
+  data.map((s) => ({
+    slug: s.slug,
+    latitude: s.latitude,
+    longitude: s.longitude,
+    latitudeType: typeof s.latitude,
+    longitudeType: typeof s.longitude,
+  }))
+);
   return data.map((s) => ({
     id: s.id,
     slug: s.slug,
@@ -31,6 +40,8 @@ export async function getAllStadiums(): Promise<StadiumSummary[]> {
     seatArea: s.seat_area,
     bestFor: s.best_for,
     watchOut: s.watch_out,
+    latitude: s.latitude,
+    longitude: s.longitude,
   }));
 }
 
@@ -65,6 +76,8 @@ export async function getStadiumBySlug(slug: string): Promise<StadiumSummary | n
     seatArea: data.seat_area,
     bestFor: data.best_for,
     watchOut: data.watch_out,
+    latitude: data.latitude,
+    longitude: data.longitude,
   };
 }
 
@@ -217,6 +230,8 @@ export async function getStadiumByGooglePlaceId(
     seatArea: data.seat_area,
     bestFor: data.best_for ?? "",
     watchOut: data.watch_out ?? "",
+    latitude: data.latitude,
+    longitude: data.longitude,
   };
 }
 

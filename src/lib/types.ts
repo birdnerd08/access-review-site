@@ -45,8 +45,9 @@ export interface Stadium {
   venueType: VenueType;
   description?: string;
   officialAccessibilityUrl?: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }
-
 export interface Review {
   id: string;
   stadiumId: string;

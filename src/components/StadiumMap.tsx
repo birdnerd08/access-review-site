@@ -9,12 +9,15 @@ interface Props {
   stadiums: StadiumSummary[];
 }
 
-const stadiumCoordinates: Record<string, { lat: number; lng: number }> = {
-  "great-lakes-stadium": { lat: 42.3314, lng: -83.0458 },
-  "riverside-ballpark": { lat: 33.749, lng: -84.388 },
-  "harbor-arena": { lat: 42.3662, lng: -71.0621 },
-  "crown-stadium": { lat: 33.2098, lng: -87.5692 },
-};
+function hasCoordinates(stadium: StadiumSummary): stadium is StadiumSummary & {
+  latitude: number;
+  longitude: number;
+} {
+  return (
+    typeof stadium.latitude === "number" &&
+    typeof stadium.longitude === "number"
+  );
+}
 
 export default function StadiumMap({ stadiums }: Props) {
   const [selected, setSelected] = useState<StadiumSummary | null>(null);
@@ -29,7 +32,15 @@ export default function StadiumMap({ stadiums }: Props) {
     );
   }
 
-  const mappableStadiums = stadiums.filter((s) => stadiumCoordinates[s.slug]);
+  const mappableStadiums = stadiums.filter(hasCoordinates);
+
+  if (mappableStadiums.length === 0) {
+    return (
+      <div className="border border-gray-200 bg-gray-50 text-gray-600 p-4 rounded-xl mb-6">
+        No stadium coordinates available yet.
+      </div>
+    );
+  }
 
   return (
     <APIProvider apiKey={apiKey}>
@@ -45,28 +56,39 @@ export default function StadiumMap({ stadiums }: Props) {
           {mappableStadiums.map((stadium) => (
             <Marker
               key={stadium.slug}
-              position={stadiumCoordinates[stadium.slug]}
+              position={{
+                lat: stadium.latitude,
+                lng: stadium.longitude,
+              }}
               onClick={() => setSelected(stadium)}
             />
           ))}
 
-          {selected && (
+          {selected && hasCoordinates(selected) && (
             <InfoWindow
-              position={stadiumCoordinates[selected.slug]}
+              position={{
+                lat: selected.latitude,
+                lng: selected.longitude,
+              }}
               onCloseClick={() => setSelected(null)}
             >
               <div className="p-1 min-w-48">
                 <p className="font-bold text-gray-900 text-sm">
                   {selected.name}
                 </p>
+
                 <p className="text-xs text-gray-500 mb-2">
                   {selected.city}, {selected.state}
                 </p>
+
                 <p className="text-xs text-gray-500 mb-2">
                   {selected.reviewCount > 0
-                    ? `${selected.averageRating} / 5 · ${selected.reviewCount} reviews`
+                    ? `${selected.averageRating} / 5 · ${selected.reviewCount} ${
+                        selected.reviewCount === 1 ? "review" : "reviews"
+                      }`
                     : "No reviews yet"}
                 </p>
+
                 <Link
                   href={`/stadiums/${selected.slug}`}
                   className="text-xs text-blue-600 hover:underline font-medium"
