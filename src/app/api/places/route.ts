@@ -38,13 +38,13 @@ export async function GET(request: NextRequest) {
     const data = await res.json();
 
     const places = (data.results ?? []).slice(0, 5).map((p: any) => ({
-      googlePlaceId: p.place_id,
-      name: p.name,
-      address: p.formatted_address,
-      city: extractCity(p.address_components ?? []),
-      state: extractState(p.address_components ?? []),
-      venueType: mapGoogleTypeToVenueType(p.types ?? []),
-    }));
+  googlePlaceId: p.place_id,
+  name: p.name,
+  address: p.formatted_address,
+  city: extractCity(p.address_components ?? [], p.formatted_address),
+  state: extractState(p.address_components ?? [], p.formatted_address),
+  venueType: mapGoogleTypeToVenueType(p.types ?? []),
+}));
 
     return NextResponse.json({ places });
   } catch (err) {
@@ -53,14 +53,28 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function extractCity(components: any[]): string {
+function extractCity(components: any[], formattedAddress: string): string {
   const city = components.find((c) => c.types.includes("locality"));
-  return city?.long_name ?? "";
+  if (city) return city.long_name;
+
+  // Fallback: parse from formatted address "Name, City, State ZIP, Country"
+  const parts = formattedAddress.split(",");
+  if (parts.length >= 2) return parts[1].trim();
+  return "";
 }
 
-function extractState(components: any[]): string {
+function extractState(components: any[], formattedAddress: string): string {
   const state = components.find((c) =>
     c.types.includes("administrative_area_level_1")
   );
-  return state?.short_name ?? "";
+  if (state) return state.short_name;
+
+  // Fallback: parse state abbreviation from formatted address
+  const parts = formattedAddress.split(",");
+  if (parts.length >= 3) {
+    const stateZip = parts[parts.length - 2].trim();
+    const stateCode = stateZip.split(" ")[0];
+    if (stateCode.length === 2) return stateCode;
+  }
+  return "";
 }
