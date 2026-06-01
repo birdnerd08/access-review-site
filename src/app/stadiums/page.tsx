@@ -5,7 +5,7 @@ import StadiumCard from "@/components/StadiumCard";
 import SearchFilters from "@/components/SearchFilters";
 import { getAllStadiums } from "@/lib/db";
 import { StadiumSummary, VenueType } from "@/lib/types";
-
+import StadiumMap from "@/components/StadiumMap";
 const stateNames: Record<string, string> = {
   AL: "alabama", AK: "alaska", AZ: "arizona", AR: "arkansas", CA: "california",
   CO: "colorado", CT: "connecticut", DE: "delaware", FL: "florida", GA: "georgia",
@@ -54,6 +54,7 @@ export default function StadiumsPage() {
       <p className="text-gray-500 mb-8">
         Real reviews from wheelchair users and disabled fans.
       </p>
+      <StadiumMap stadiums={stadiums} />
 
       <SearchFilters
         search={search}
