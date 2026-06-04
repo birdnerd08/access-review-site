@@ -1,6 +1,5 @@
 import { supabase } from "./supabase";
-import { StadiumSummary, Review, AccessNeed } from "./types";
-
+import { StadiumSummary, Review, AccessNeed, AccessMarker } from "./types";
 export async function getAllStadiums(): Promise<StadiumSummary[]> {
   const { data, error } = await supabase
     .from("stadiums")
@@ -81,6 +80,33 @@ export async function getStadiumBySlug(slug: string): Promise<StadiumSummary | n
   };
 }
 
+export async function getAccessMarkersByStadiumId(
+  stadiumId: string
+): Promise<AccessMarker[]> {
+  const { data, error } = await supabase
+    .from("access_markers")
+    .select("*")
+    .eq("stadium_id", stadiumId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching access markers:", error);
+    return [];
+  }
+
+  return (data ?? []).map((m) => ({
+    id: m.id,
+    stadiumId: m.stadium_id,
+    reviewId: m.review_id,
+    markerType: m.marker_type,
+    label: m.label,
+    notes: m.notes,
+    latitude: m.latitude,
+    longitude: m.longitude,
+    createdAt: m.created_at,
+  }));
+}
+
 export async function getReviewsByStadiumId(stadiumId: string): Promise<Review[]> {
   const { data: reviewData, error: reviewError } = await supabase
     .from("reviews")
@@ -137,7 +163,14 @@ export async function submitReview(
     whoItWorksFor: string;
     wouldRecommend: string;
     seatSection?: string;
-  }
+    accessMarker?: {
+      markerType: string;
+      label: string;
+      notes?: string;
+      latitude: number;
+      longitude: number;
+  };
+}
 ): Promise<boolean> {
   const reviewId = crypto.randomUUID();
 
@@ -175,7 +208,27 @@ export async function submitReview(
       console.error("Error inserting access needs:", needsError);
       return false;
     }
+
+    if (form.accessMarker) {
+  const { error: markerError } = await supabase
+    .from("access_markers")
+    .insert({
+      stadium_id: stadiumId,
+      review_id: reviewId,
+      marker_type: form.accessMarker.markerType,
+      label: form.accessMarker.label,
+      notes: form.accessMarker.notes || null,
+      latitude: form.accessMarker.latitude,
+      longitude: form.accessMarker.longitude,
+    });
+
+  if (markerError) {
+    console.error("Error inserting access marker:", markerError);
+    return false;
   }
+}
+  }
+
 
   return true;
 }

@@ -1,13 +1,12 @@
 "use client";
 
-
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { AccessNeed, EventType, Recommendation } from "@/lib/types";
-import { getStadiumBySlug } from "@/lib/db";
-import { submitReview } from "@/lib/db";
 import { useState, useEffect } from "react";
-import { StadiumSummary } from "@/lib/types";
+import { AccessNeed, EventType, Recommendation, StadiumSummary } from "@/lib/types";
+import { getStadiumBySlug, submitReview } from "@/lib/db";
+import AccessMarkerPicker from "@/components/AccessMarkerPicker";
+
 const ACCESS_NEEDS: AccessNeed[] = [
   "Power wheelchair",
   "Manual wheelchair",
@@ -71,20 +70,60 @@ const emptyForm: FormData = {
   wouldRecommend: "",
   seatSection: "",
 };
-
+function getDefaultMarkerLabel(type: string) {
+  switch (type) {
+    case "accessible_entrance":
+      return "Accessible entrance";
+    case "accessible_parking":
+      return "Accessible parking";
+    case "dropoff_zone":
+      return "Drop-off zone";
+    case "elevator":
+      return "Elevator";
+    case "accessible_restroom":
+      return "Accessible restroom";
+    case "problem_area":
+      return "Problem area";
+    default:
+      return "Access marker";
+  }
+}
 export default function NewReviewPage() {
   const params = useParams();
   const router = useRouter();
   const stadiumId = params.stadiumId as string;
+
   const [stadium, setStadium] = useState<StadiumSummary | null>(null);
-useEffect(() => {
-  getStadiumBySlug(stadiumId).then((data) => setStadium(data));
-}, [stadiumId]);
+  const [loadingStadium, setLoadingStadium] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   const [form, setForm] = useState<FormData>(emptyForm);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitted, setSubmitted] = useState(false);
+
+  const [includeAccessMarker, setIncludeAccessMarker] = useState(false);
+  const [markerType, setMarkerType] = useState("accessible_entrance");
+  const [markerLabel, setMarkerLabel] = useState("");
+  const [markerNotes, setMarkerNotes] = useState("");
+  const [markerLocation, setMarkerLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+
+  useEffect(() => {
+    getStadiumBySlug(stadiumId).then((data) => {
+      setStadium(data);
+      setLoadingStadium(false);
+    });
+  }, [stadiumId]);
+
+  if (loadingStadium) {
+    return (
+      <main className="max-w-2xl mx-auto px-4 py-10">
+        <p className="text-gray-500">Loading stadium...</p>
+      </main>
+    );
+  }
 
   if (!stadium) {
     return (
@@ -108,27 +147,53 @@ useEffect(() => {
 
   function validate(): boolean {
     const newErrors: FormErrors = {};
+
     if (!form.eventType) newErrors.eventType = "Choose an event type.";
-    if (form.accessNeeds.length === 0)
+
+    if (form.accessNeeds.length === 0) {
       newErrors.accessNeeds = "Choose at least one access need.";
-    if (form.overallUsabilityRating === 0)
+    }
+
+    if (form.overallUsabilityRating === 0) {
       newErrors.overallUsabilityRating = "Choose a rating.";
-    if (!form.whatWorkedWell.trim())
+    }
+
+    if (!form.whatWorkedWell.trim()) {
       newErrors.whatWorkedWell = "Add a short note about what worked well.";
-    if (!form.barriersOrHardMoments.trim())
-      newErrors.barriersOrHardMoments = "Add a note about barriers or hard moments.";
-    if (!form.specificDetailToKnow.trim())
-      newErrors.specificDetailToKnow = "Add one detail that would help another fan plan.";
-    if (!form.whoItWorksFor.trim())
-      newErrors.whoItWorksFor = "Describe who this stadium works for and who might struggle.";
-    if (!form.wouldRecommend)
+    }
+
+    if (!form.barriersOrHardMoments.trim()) {
+      newErrors.barriersOrHardMoments =
+        "Add a note about barriers or hard moments.";
+    }
+
+    if (!form.specificDetailToKnow.trim()) {
+      newErrors.specificDetailToKnow =
+        "Add one detail that would help another fan plan.";
+    }
+
+    if (!form.whoItWorksFor.trim()) {
+      newErrors.whoItWorksFor =
+        "Describe who this stadium works for and who might struggle.";
+    }
+
+    if (!form.wouldRecommend) {
       newErrors.wouldRecommend = "Choose a recommendation.";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
 
-async function handleSubmit() {
+  async function handleSubmit() {
     if (!validate()) return;
+
+
+    if (includeAccessMarker && !markerLocation) {
+      alert("Please click the map to place your access marker.");
+      return;
+    }
+
     setSubmitting(true);
 
     const success = await submitReview(stadiumId, {
@@ -141,6 +206,16 @@ async function handleSubmit() {
       whoItWorksFor: form.whoItWorksFor,
       wouldRecommend: form.wouldRecommend as string,
       seatSection: form.seatSection,
+      accessMarker:
+  includeAccessMarker && markerLocation
+    ? {
+        markerType,
+        label: markerLabel.trim() || getDefaultMarkerLabel(markerType),
+        notes: markerNotes,
+        latitude: markerLocation.latitude,
+        longitude: markerLocation.longitude,
+      }
+    : undefined,
     });
 
     setSubmitting(false);
@@ -177,22 +252,22 @@ async function handleSubmit() {
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-10">
-      {/* Header */}
       <Link
         href={`/stadiums/${stadiumId}`}
         className="text-sm text-blue-600 hover:underline mb-6 inline-block"
       >
         ← Back to {stadium.name}
       </Link>
+
       <h1 className="text-2xl font-bold text-gray-900 mb-1">
         Review {stadium.name}
       </h1>
+
       <p className="text-gray-500 text-sm mb-8">
         Help the next fan plan their visit. Takes about 3–5 minutes.
       </p>
 
       <div className="flex flex-col gap-8">
-
         {/* Q1 — Event type */}
         <div>
           <label className="block text-sm font-semibold text-gray-800 mb-2">
@@ -208,7 +283,9 @@ async function handleSubmit() {
           >
             <option value="">Select event type</option>
             {EVENT_TYPES.map((t) => (
-              <option key={t} value={t}>{t}</option>
+              <option key={t} value={t}>
+                {t}
+              </option>
             ))}
           </select>
           {errors.eventType && (
@@ -288,7 +365,8 @@ async function handleSubmit() {
             <span className="text-red-500 ml-1">*</span>
           </label>
           <p className="text-xs text-gray-400 mb-2">
-            e.g. accessible parking, entrance, staff, seating view, companion seat, bathroom, elevator, shade
+            e.g. accessible parking, entrance, staff, seating view, companion
+            seat, bathroom, elevator, shade
           </p>
           <textarea
             value={form.whatWorkedWell}
@@ -311,7 +389,8 @@ async function handleSubmit() {
             <span className="text-red-500 ml-1">*</span>
           </label>
           <p className="text-xs text-gray-400 mb-2">
-            e.g. long routes, elevator waits, blocked sightlines, steep ramps, crowding, heat, bathroom distance
+            e.g. long routes, elevator waits, blocked sightlines, steep ramps,
+            crowding, heat, bathroom distance
           </p>
           <textarea
             value={form.barriersOrHardMoments}
@@ -332,15 +411,18 @@ async function handleSubmit() {
         {/* Q6 — Specific detail */}
         <div>
           <label className="block text-sm font-semibold text-gray-800 mb-1">
-            6. What specific detail would have helped you know before buying tickets?
+            6. What specific detail would have helped you know before buying
+            tickets?
             <span className="text-red-500 ml-1">*</span>
           </label>
           <p className="text-xs text-gray-400 mb-2">
-            e.g. seat section, entrance route, parking timing, bathroom distance, elevator wait, shade, crowd timing
+            e.g. seat section, entrance route, parking timing, bathroom
+            distance, elevator wait, shade, crowd timing
           </p>
           <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 mb-2">
             <p className="text-xs text-blue-700">
-              This is the most useful thing you can share — one specific detail that would help another fan decide whether to buy tickets.
+              This is the most useful thing you can share — one specific detail
+              that would help another fan decide whether to buy tickets.
             </p>
           </div>
           <textarea
@@ -366,7 +448,8 @@ async function handleSubmit() {
             <span className="text-red-500 ml-1">*</span>
           </label>
           <p className="text-xs text-gray-400 mb-2">
-            e.g. Good for power wheelchair users if they arrive early; difficult for people with fatigue after the final whistle
+            e.g. Good for power wheelchair users if they arrive early; difficult
+            for people with fatigue after the final whistle
           </p>
           <textarea
             value={form.whoItWorksFor}
@@ -385,7 +468,8 @@ async function handleSubmit() {
         {/* Q8 — Would recommend */}
         <div>
           <label className="block text-sm font-semibold text-gray-800 mb-2">
-            8. Would you buy tickets here again or recommend it to someone with similar access needs?
+            8. Would you buy tickets here again or recommend it to someone with
+            similar access needs?
             <span className="text-red-500 ml-1">*</span>
           </label>
           <div className="flex flex-wrap gap-3">
@@ -433,21 +517,91 @@ async function handleSubmit() {
           />
         </div>
 
+        {/* Optional — Access marker */}
+        <div className="border border-gray-200 rounded-xl p-4">
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-900 mb-3">
+            <input
+              type="checkbox"
+              checked={includeAccessMarker}
+              onChange={(e) => setIncludeAccessMarker(e.target.checked)}
+            />
+            Add an access map marker
+          </label>
+
+          {includeAccessMarker && (
+            <div className="grid grid-cols-1 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Marker type
+                </label>
+                <select
+                  value={markerType}
+                  onChange={(e) => setMarkerType(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="accessible_entrance">Accessible entrance</option>
+                  <option value="accessible_parking">Accessible parking</option>
+                  <option value="dropoff_zone">Drop-off zone</option>
+                  <option value="elevator">Elevator</option>
+                  <option value="accessible_restroom">Accessible restroom</option>
+                  <option value="problem_area">Problem area</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Label
+                </label>
+                <input
+                  value={markerLabel}
+                  onChange={(e) => setMarkerLabel(e.target.value)}
+                  placeholder="Example: Gate B accessible entrance"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Notes
+                </label>
+                <textarea
+                  value={markerNotes}
+                  onChange={(e) => setMarkerNotes(e.target.value)}
+                  placeholder="What should someone know about this spot?"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Marker location
+                </label>
+                <AccessMarkerPicker
+                  stadium={stadium}
+                  value={markerLocation}
+                  onChange={setMarkerLocation}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Submit */}
         <div className="pt-2">
-<button
-  type="button"
-  onClick={handleSubmit}
-  disabled={submitting}
-  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-colors text-sm"
->
-  {submitting ? "Submitting..." : "Submit review"}
-</button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-colors text-sm"
+          >
+            {submitting ? "Submitting..." : "Submit review"}
+          </button>
+
           <p className="text-xs text-gray-400 text-center mt-3">
             Your review helps other disabled fans make informed decisions.
           </p>
         </div>
-
       </div>
     </main>
   );

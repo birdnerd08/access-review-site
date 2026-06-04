@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getStadiumBySlug, getReviewsByStadiumId } from "@/lib/db";
+import { getStadiumBySlug, getReviewsByStadiumId,  getAccessMarkersByStadiumId,} from "@/lib/db";
 import ReviewCard from "@/components/ReviewCard";
 import AccessNeedTags from "@/components/AccessNeedTags";
 import RatingDisplay from "@/components/RatingDisplay";
@@ -18,11 +18,16 @@ export default async function StadiumDetailPage({ params }: PageProps) {
 
   const stadiumReviews = await getReviewsByStadiumId(stadium.id);
 
+  const accessMarkers = await getAccessMarkersByStadiumId(stadium.id);
+
   const allAccessNeeds = [
     ...new Set(stadiumReviews.flatMap((r) => r.accessNeeds)),
   ];
 
   const hasReviews = stadiumReviews.length > 0;
+
+ 
+
 
   return (
     <main className="max-w-4xl mx-auto px-4 py-10">
@@ -56,7 +61,7 @@ export default async function StadiumDetailPage({ params }: PageProps) {
           <p className="text-gray-600 mt-4">{stadium.description}</p>
         )}
       </div>
-      <StadiumDetailMap stadium={stadium} />
+      <StadiumDetailMap stadium={stadium} markers={accessMarkers ?? []} />
 
       {/* No reviews yet — new stadium state */}
       {!hasReviews && (

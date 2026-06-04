@@ -36,6 +36,26 @@ export type ReviewStatus =
   | "flagged"
   | "hidden";
 
+  export type AccessMarkerType =
+  | "accessible_entrance"
+  | "accessible_parking"
+  | "dropoff_zone"
+  | "elevator"
+  | "accessible_restroom"
+  | "problem_area"
+  | "other";
+
+export interface AccessMarker {
+  id: string;
+  stadiumId: string;
+  reviewId?: string | null;
+  markerType: AccessMarkerType;
+  label: string;
+  notes?: string | null;
+  latitude: number;
+  longitude: number;
+  createdAt: string;
+}
 export interface Stadium {
   id: string;
   slug: string;
