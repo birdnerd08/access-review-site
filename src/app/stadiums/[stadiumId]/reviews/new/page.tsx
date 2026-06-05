@@ -3,8 +3,13 @@
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { AccessNeed, EventType, Recommendation, StadiumSummary } from "@/lib/types";
-import { getStadiumBySlug, submitReview } from "@/lib/db";
+import {
+  AccessNeed,
+  EventType,
+  Recommendation,
+  StadiumSummary,
+} from "@/lib/types";
+import { getStadiumBySlug, submitReview, uploadReviewPhotos } from "@/lib/db";
 import AccessMarkerPicker from "@/components/AccessMarkerPicker";
 
 const ACCESS_NEEDS: AccessNeed[] = [
@@ -70,6 +75,7 @@ const emptyForm: FormData = {
   wouldRecommend: "",
   seatSection: "",
 };
+
 function getDefaultMarkerLabel(type: string) {
   switch (type) {
     case "accessible_entrance":
@@ -88,6 +94,7 @@ function getDefaultMarkerLabel(type: string) {
       return "Access marker";
   }
 }
+
 export default function NewReviewPage() {
   const params = useParams();
   const router = useRouter();
@@ -109,6 +116,8 @@ export default function NewReviewPage() {
     latitude: number;
     longitude: number;
   } | null>(null);
+
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
 
   useEffect(() => {
     getStadiumBySlug(stadiumId).then((data) => {
@@ -135,6 +144,8 @@ export default function NewReviewPage() {
       </main>
     );
   }
+
+  const currentStadium = stadium;
 
   function toggleAccessNeed(need: AccessNeed) {
     setForm((prev) => ({
@@ -188,7 +199,6 @@ export default function NewReviewPage() {
   async function handleSubmit() {
     if (!validate()) return;
 
-
     if (includeAccessMarker && !markerLocation) {
       alert("Please click the map to place your access marker.");
       return;
@@ -196,7 +206,7 @@ export default function NewReviewPage() {
 
     setSubmitting(true);
 
-    const success = await submitReview(stadiumId, {
+    const reviewId = await submitReview(stadiumId, {
       eventType: form.eventType as string,
       accessNeeds: form.accessNeeds,
       overallUsabilityRating: form.overallUsabilityRating,
@@ -207,24 +217,42 @@ export default function NewReviewPage() {
       wouldRecommend: form.wouldRecommend as string,
       seatSection: form.seatSection,
       accessMarker:
-  includeAccessMarker && markerLocation
-    ? {
-        markerType,
-        label: markerLabel.trim() || getDefaultMarkerLabel(markerType),
-        notes: markerNotes,
-        latitude: markerLocation.latitude,
-        longitude: markerLocation.longitude,
-      }
-    : undefined,
+        includeAccessMarker && markerLocation
+          ? {
+              markerType,
+              label: markerLabel.trim() || getDefaultMarkerLabel(markerType),
+              notes: markerNotes,
+              latitude: markerLocation.latitude,
+              longitude: markerLocation.longitude,
+            }
+          : undefined,
     });
 
-    setSubmitting(false);
-
-    if (success) {
-      setSubmitted(true);
-    } else {
+    if (!reviewId) {
+      setSubmitting(false);
       alert("Something went wrong submitting your review. Please try again.");
+      return;
     }
+
+    if (photoFiles.length > 0) {
+      const photosUploaded = await uploadReviewPhotos({
+        reviewId,
+        stadiumId,
+        files: photoFiles,
+      });
+
+      if (!photosUploaded) {
+        setSubmitting(false);
+        alert(
+          "Your review was submitted, but the photos did not upload. You can continue for now."
+        );
+        setSubmitted(true);
+        return;
+      }
+    }
+
+    setSubmitting(false);
+    setSubmitted(true);
   }
 
   if (submitted) {
@@ -237,13 +265,13 @@ export default function NewReviewPage() {
           </h2>
           <p className="text-gray-600 mb-6">
             Your experience helps other disabled fans plan their visit to{" "}
-            {stadium.name}.
+            {currentStadium.name}.
           </p>
           <Link
             href={`/stadiums/${stadiumId}`}
             className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-6 py-2 rounded-lg transition-colors inline-block"
           >
-            Back to {stadium.name}
+            Back to {currentStadium.name}
           </Link>
         </div>
       </main>
@@ -256,11 +284,11 @@ export default function NewReviewPage() {
         href={`/stadiums/${stadiumId}`}
         className="text-sm text-blue-600 hover:underline mb-6 inline-block"
       >
-        ← Back to {stadium.name}
+        ← Back to {currentStadium.name}
       </Link>
 
       <h1 className="text-2xl font-bold text-gray-900 mb-1">
-        Review {stadium.name}
+        Review {currentStadium.name}
       </h1>
 
       <p className="text-gray-500 text-sm mb-8">
@@ -551,12 +579,13 @@ export default function NewReviewPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Label
+                  Label{" "}
+                  <span className="text-gray-400 font-normal">(optional)</span>
                 </label>
                 <input
                   value={markerLabel}
                   onChange={(e) => setMarkerLabel(e.target.value)}
-                  placeholder="Example: Gate B accessible entrance"
+                  placeholder="Add a specific name if helpful"
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 />
               </div>
@@ -578,7 +607,7 @@ export default function NewReviewPage() {
                   Marker location
                 </label>
                 <AccessMarkerPicker
-                  stadium={stadium}
+                  stadium={currentStadium}
                   value={markerLocation}
                   onChange={setMarkerLocation}
                 />
@@ -586,6 +615,37 @@ export default function NewReviewPage() {
             </div>
           )}
         </div>
+{/* Optional — Photos */}
+<div className="border border-gray-200 rounded-xl p-4">
+  <label className="block text-sm font-semibold text-gray-800 mb-1">
+    Add photos <span className="text-gray-400 font-normal">(optional)</span>
+  </label>
+
+  <p className="text-xs text-gray-400 mb-3">
+    Upload up to 3 photos that help another disabled fan plan their visit, such
+    as entrances, ramps, seating views, bathrooms, elevators, signage, parking,
+    or problem areas. Photos will be reviewed before appearing publicly.
+  </p>
+
+  <input
+    type="file"
+    accept="image/*"
+    multiple
+    onChange={(e) => {
+      const files = Array.from(e.target.files ?? []).slice(0, 3);
+      setPhotoFiles(files);
+    }}
+    className="block w-full text-sm text-gray-600"
+  />
+
+  {photoFiles.length > 0 && (
+    <div className="mt-3 text-xs text-gray-500">
+      {photoFiles.map((file) => (
+        <p key={file.name}>• {file.name}</p>
+      ))}
+    </div>
+  )}
+</div>
 
         {/* Submit */}
         <div className="pt-2">

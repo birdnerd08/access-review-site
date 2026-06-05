@@ -45,6 +45,7 @@ export type ReviewStatus =
   | "problem_area"
   | "other";
 
+
 export interface AccessMarker {
   id: string;
   stadiumId: string;
@@ -55,6 +56,32 @@ export interface AccessMarker {
   latitude: number;
   longitude: number;
   createdAt: string;
+}
+export interface ReviewPhotoModerationItem {
+  id: string;
+  reviewId: string;
+  stadiumId: string;
+  stadiumName?: string | null;
+  storagePath: string;
+  publicUrl: string;
+  caption?: string | null;
+  status: ReviewPhotoStatus;
+  createdAt: string;
+}
+
+export type ReviewPhotoStatus = "pending" | "approved" | "rejected" | "flagged";
+
+export interface ReviewPhoto {
+  id: string;
+  reviewId: string;
+  stadiumId: string;
+  storagePath: string;
+  publicUrl: string;
+  caption?: string | null;
+  status: ReviewPhotoStatus;
+  createdAt: string;
+  reviewedAt?: string | null;
+  reviewedBy?: string | null;
 }
 export interface Stadium {
   id: string;

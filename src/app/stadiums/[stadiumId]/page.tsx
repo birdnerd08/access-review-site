@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getStadiumBySlug, getReviewsByStadiumId,  getAccessMarkersByStadiumId,} from "@/lib/db";
+import { getStadiumBySlug, getReviewsByStadiumId,   getApprovedReviewPhotosByStadiumId, getAccessMarkersByStadiumId,} from "@/lib/db";
 import ReviewCard from "@/components/ReviewCard";
 import AccessNeedTags from "@/components/AccessNeedTags";
 import RatingDisplay from "@/components/RatingDisplay";
@@ -19,6 +19,8 @@ export default async function StadiumDetailPage({ params }: PageProps) {
   const stadiumReviews = await getReviewsByStadiumId(stadium.id);
 
   const accessMarkers = await getAccessMarkersByStadiumId(stadium.id);
+
+  const reviewPhotos = await getApprovedReviewPhotosByStadiumId(stadium.id);
 
   const allAccessNeeds = [
     ...new Set(stadiumReviews.flatMap((r) => r.accessNeeds)),
@@ -159,8 +161,12 @@ export default async function StadiumDetailPage({ params }: PageProps) {
           </div>
           <div className="flex flex-col gap-4">
             {stadiumReviews.map((review) => (
-              <ReviewCard key={review.id} review={review} />
-            ))}
+  <ReviewCard
+    key={review.id}
+    review={review}
+    photos={reviewPhotos.filter((photo) => photo.reviewId === review.id)}
+  />
+))}
           </div>
         </div>
       )}

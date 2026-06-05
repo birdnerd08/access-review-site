@@ -1,24 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
 
-function mapGoogleTypeToVenueType(types: string[]): string {
-  if (types.includes("baseball_stadium")) {
-    return "Baseball Stadium";
-  }
+function mapGoogleTypeToVenueType(types: string[] = [], name?: string | null): string {
+  const lowerName = (name ?? "").toLowerCase();
 
-  if (types.includes("stadium")) {
-    return "Football Stadium";
-  }
-
-  if (types.includes("basketball_arena")) {
+  if (
+    lowerName.includes("arena") ||
+    lowerName.includes("center") ||
+    lowerName.includes("centre") ||
+    lowerName.includes("coliseum") ||
+    lowerName.includes("pavilion")
+  ) {
     return "Basketball / Concert Arena";
   }
 
   if (
-    types.includes("university") ||
-    types.includes("school") ||
-    types.includes("college")
+    lowerName.includes("park") ||
+    lowerName.includes("baseball") ||
+    lowerName.includes("field") ||
+    lowerName.includes("yankee stadium") ||
+    lowerName.includes("fenway") ||
+    lowerName.includes("dodger stadium") ||
+    lowerName.includes("citi field") ||
+    lowerName.includes("wrigley")
+  ) {
+    return "Baseball Stadium";
+  }
+
+  if (
+    lowerName.includes("university") ||
+    lowerName.includes("college") ||
+    lowerName.includes("campus") ||
+    lowerName.includes("michigan stadium") ||
+    lowerName.includes("spartan stadium") ||
+    lowerName.includes("ohio stadium") ||
+    lowerName.includes("beaver stadium")
   ) {
     return "College Stadium";
+  }
+
+  if (types.includes("stadium")) {
+    return "Football Stadium";
   }
 
   return "Other";
@@ -57,7 +78,7 @@ export async function GET(request: NextRequest) {
       address: p.formatted_address,
       city: extractCity(p.address_components ?? [], p.formatted_address),
       state: extractState(p.address_components ?? [], p.formatted_address),
-      venueType: mapGoogleTypeToVenueType(p.types ?? []),
+      venueType: mapGoogleTypeToVenueType(p.types ?? [], p.name ?? ""),
       latitude: p.geometry?.location?.lat ?? null,
       longitude: p.geometry?.location?.lng ?? null,
     }));
@@ -78,7 +99,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function extractCity(components: any[], formattedAddress: string): string {
+function extractCity(components: any[], formattedAddress = ""): string {
   const city = components.find((c) => c.types.includes("locality"));
   if (city) return city.long_name;
 
@@ -88,7 +109,7 @@ function extractCity(components: any[], formattedAddress: string): string {
   return "";
 }
 
-function extractState(components: any[], formattedAddress: string): string {
+function extractState(components: any[], formattedAddress = ""): string {
   const state = components.find((c) =>
     c.types.includes("administrative_area_level_1")
   );

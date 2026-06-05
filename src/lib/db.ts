@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
-import { StadiumSummary, Review, AccessNeed, AccessMarker } from "./types";
+import { StadiumSummary, Review, AccessNeed, AccessMarker,ReviewPhotoModerationItem,
+  ReviewPhotoStatus,ReviewPhoto, } from "./types";
 export async function getAllStadiums(): Promise<StadiumSummary[]> {
   const { data, error } = await supabase
     .from("stadiums")
@@ -42,6 +43,92 @@ console.log(
     latitude: s.latitude,
     longitude: s.longitude,
   }));
+}
+export async function getApprovedReviewPhotosByStadiumId(
+  stadiumId: string
+): Promise<ReviewPhoto[]> {
+  const { data, error } = await supabase
+    .from("review_photos")
+    .select("*")
+    .eq("stadium_id", stadiumId)
+    .eq("status", "approved")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching approved review photos:", error);
+    return [];
+  }
+
+  return (data ?? []).map((p) => {
+    const { data: publicUrlData } = supabase.storage
+      .from("review-photos")
+      .getPublicUrl(p.storage_path);
+
+    return {
+      id: p.id,
+      reviewId: p.review_id,
+      stadiumId: p.stadium_id,
+      storagePath: p.storage_path,
+      publicUrl: publicUrlData.publicUrl,
+      caption: p.caption,
+      status: p.status,
+      createdAt: p.created_at,
+      reviewedAt: p.reviewed_at,
+      reviewedBy: p.reviewed_by,
+    };
+  });
+}
+export async function getPendingReviewPhotos(): Promise<
+  ReviewPhotoModerationItem[]
+> {
+  const { data, error } = await supabase
+    .from("review_photos")
+    .select("*")
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching pending review photos:", error);
+    return [];
+  }
+
+  return (data ?? []).map((p) => {
+    const { data: publicUrlData } = supabase.storage
+      .from("review-photos")
+      .getPublicUrl(p.storage_path);
+
+    return {
+      id: p.id,
+      reviewId: p.review_id,
+      stadiumId: p.stadium_id,
+      stadiumName: null,
+      storagePath: p.storage_path,
+      publicUrl: publicUrlData.publicUrl,
+      caption: p.caption,
+      status: p.status,
+      createdAt: p.created_at,
+    };
+  });
+}
+export async function updateReviewPhotoStatus(
+  photoId: string,
+  status: ReviewPhotoStatus
+): Promise<boolean> {
+  const { error } = await supabase
+    .from("review_photos")
+    .update({
+      status,
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: "admin",
+    })
+    .eq("id", photoId);
+
+  if (error) {
+    console.error("Error updating review photo status:", error);
+    return false;
+  }
+
+  return true;
 }
 
 export async function getStadiumBySlug(slug: string): Promise<StadiumSummary | null> {
@@ -171,7 +258,7 @@ export async function submitReview(
       longitude: number;
   };
 }
-): Promise<boolean> {
+): Promise<string |null> {
   const reviewId = crypto.randomUUID();
 
   const { error: reviewError } = await supabase.from("reviews").insert({
@@ -191,7 +278,7 @@ export async function submitReview(
 
   if (reviewError) {
     console.error("Error inserting review:", reviewError);
-    return false;
+    return null;
   }
 
   if (form.accessNeeds.length > 0) {
@@ -206,7 +293,7 @@ export async function submitReview(
 
     if (needsError) {
       console.error("Error inserting access needs:", needsError);
-      return false;
+      return null;
     }
 
     if (form.accessMarker) {
@@ -224,13 +311,13 @@ export async function submitReview(
 
   if (markerError) {
     console.error("Error inserting access marker:", markerError);
-    return false;
+    return null;
   }
 }
   }
 
 
-  return true;
+  return reviewId;
 }
 export async function submitStadiumRequest(request: {
   name: string;
@@ -390,4 +477,46 @@ if (existing) {
   }
 
   return slug;
+}
+export async function uploadReviewPhotos(params: {
+  reviewId: string;
+  stadiumId: string;
+  files: File[];
+}): Promise<boolean> {
+  const { reviewId, stadiumId, files } = params;
+
+  if (files.length === 0) return true;
+
+  for (const file of files) {
+    const fileExt = file.name.split(".").pop() || "jpg";
+    const safeFileName = `${crypto.randomUUID()}.${fileExt}`;
+    const storagePath = `${stadiumId}/${reviewId}/${safeFileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("review-photos")
+      .upload(storagePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error("Error uploading review photo:", uploadError);
+      return false;
+    }
+
+    const { error: dbError } = await supabase.from("review_photos").insert({
+      review_id: reviewId,
+      stadium_id: stadiumId,
+      storage_path: storagePath,
+      caption: null,
+      status: "pending",
+    });
+
+    if (dbError) {
+      console.error("Error inserting review photo row:", dbError);
+      return false;
+    }
+  }
+
+  return true;
 }

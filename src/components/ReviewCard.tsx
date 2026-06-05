@@ -1,14 +1,15 @@
-import { Review } from "@/lib/types";
+import { Review, ReviewPhoto} from "@/lib/types";
 import AccessNeedTags from "./AccessNeedTags";
 import RatingDisplay from "./RatingDisplay";
 import { formatDate, truncate } from "@/lib/utils";
 
 interface ReviewCardProps {
   review: Review;
+  photos?: ReviewPhoto[];
   expanded?: boolean;
 }
 
-export default function ReviewCard({ review, expanded = false }: ReviewCardProps) {
+export default function ReviewCard({ review,photos = [],  expanded = false }: ReviewCardProps) {
   return (
     <div className="border border-gray-200 rounded-xl p-6 bg-white">
 
@@ -85,6 +86,31 @@ export default function ReviewCard({ review, expanded = false }: ReviewCardProps
             </span>
           )}
         </div>
+        {photos.length > 0 && (
+  <div className="mt-4">
+    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+      Photos
+    </p>
+
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {photos.map((photo) => (
+        <a
+          key={photo.id}
+          href={photo.publicUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block"
+        >
+          <img
+            src={photo.publicUrl}
+            alt={photo.caption || "Accessibility review photo"}
+            className="w-full h-32 object-cover rounded-lg border border-gray-200 bg-gray-100"
+          />
+        </a>
+      ))}
+    </div>
+  </div>
+)}
 
         <div className="flex items-center gap-3">
           {/* Outdated flag */}

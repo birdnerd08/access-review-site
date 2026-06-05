@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getAllStadiums, addStadiumFromGooglePlaces } from "@/lib/db";
-import { StadiumSummary } from "@/lib/types";
+import { StadiumSummary, VenueType } from "@/lib/types";
 
 const stateNames: Record<string, string> = {
   AL: "alabama", AK: "alaska", AZ: "arizona", AR: "arkansas", CA: "california",
@@ -29,6 +29,14 @@ interface GooglePlace {
   latitude?: number | null;
   longitude?: number | null;
 }
+const VENUE_TYPES: VenueType[] = [
+  "Football Stadium",
+  "Baseball Stadium",
+  "Basketball / Concert Arena",
+  "College Stadium",
+  "Other",
+];
+
 
 export default function SelectStadiumPage() {
   const router = useRouter();
@@ -38,6 +46,9 @@ export default function SelectStadiumPage() {
   const [googleResults, setGoogleResults] = useState<GooglePlace[]>([]);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [googleVenueTypeOverrides, setGoogleVenueTypeOverrides] = useState<
+  Record<string, VenueType>
+>({});
 
   useEffect(() => {
     getAllStadiums().then((data) => {
@@ -90,6 +101,12 @@ export default function SelectStadiumPage() {
       (s) => s.name.toLowerCase() === g.name.toLowerCase()
     )
   );
+  function getGoogleVenueType(place: GooglePlace): VenueType {
+  return (
+    googleVenueTypeOverrides[place.googlePlaceId] ??
+    (place.venueType as VenueType)
+  );
+}
 
   async function handleSelectGoogle(place: GooglePlace) {
   setAdding(true);
@@ -105,7 +122,7 @@ export default function SelectStadiumPage() {
     name: place.name,
     city: place.city,
     state: place.state,
-    venueType: place.venueType,
+    venueType: getGoogleVenueType(place),
     latitude: place.latitude ?? null,
     longitude: place.longitude ?? null,
   });
@@ -231,23 +248,45 @@ export default function SelectStadiumPage() {
                   </p>
                   <div className="flex flex-col gap-3">
                     {newGoogleResults.map((place) => (
-                      <button
-                        key={place.googlePlaceId}
-                        type="button"
-                        onClick={() => handleSelectGoogle(place)}
-                        className="text-left border border-dashed border-gray-300 bg-white rounded-xl px-5 py-4 hover:border-blue-400 hover:bg-blue-50 transition-colors"
-                      >
-                        <p className="font-semibold text-gray-900">
-                          {place.name}
-                        </p>
-                        <p className="text-sm text-gray-500 mt-0.5">
-                          {place.address}
-                        </p>
-                        <p className="text-xs text-blue-600 mt-1">
-                          + Add and review this stadium
-                        </p>
-                      </button>
-                    ))}
+  <div
+    key={place.googlePlaceId}
+    className="border border-dashed border-gray-300 bg-white rounded-xl px-5 py-4"
+  >
+    <p className="font-semibold text-gray-900">{place.name}</p>
+
+    <p className="text-sm text-gray-500 mt-0.5">{place.address}</p>
+
+    <div className="mt-3">
+      <label className="block text-xs font-medium text-gray-500 mb-1">
+        Venue type
+      </label>
+      <select
+        value={getGoogleVenueType(place)}
+        onChange={(e) =>
+          setGoogleVenueTypeOverrides((prev) => ({
+            ...prev,
+            [place.googlePlaceId]: e.target.value as VenueType,
+          }))
+        }
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+      >
+        {VENUE_TYPES.map((type) => (
+          <option key={type} value={type}>
+            {type}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <button
+      type="button"
+      onClick={() => handleSelectGoogle(place)}
+      className="mt-3 text-sm text-blue-600 hover:underline font-medium"
+    >
+      + Add and review this stadium
+    </button>
+  </div>
+))}
                   </div>
                 </div>
               ) : localFiltered.length === 0 ? (
