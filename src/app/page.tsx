@@ -271,8 +271,7 @@ export default async function HomePage() {
       {/* Footer */}
       <footer className="border-t border-[#E5DED1] mt-12">
         <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row justify-between gap-4 text-sm text-gray-500">
-          <p>Credits</p>
-          <p>Created by Ryan Hume - a summer project</p>
+          <p></p>
         </div>
       </footer>
     </main>

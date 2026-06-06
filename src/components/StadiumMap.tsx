@@ -9,14 +9,39 @@ interface Props {
   stadiums: StadiumSummary[];
 }
 
-function hasCoordinates(stadium: StadiumSummary): stadium is StadiumSummary & {
-  latitude: number;
-  longitude: number;
-} {
-  return (
-    typeof stadium.latitude === "number" &&
-    typeof stadium.longitude === "number"
-  );
+function getCoordinates(stadium: StadiumSummary) {
+  const lat = Number(stadium.latitude);
+  const lng = Number(stadium.longitude);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+
+  return { lat, lng };
+}
+
+function getRatingColor(stadium: StadiumSummary) {
+  if (!stadium.reviewCount || stadium.reviewCount === 0) {
+    return "#6B7280"; // gray
+  }
+
+  if (stadium.averageRating >= 4) {
+    return "#15803D"; // green
+  }
+
+  if (stadium.averageRating >= 3) {
+    return "#CA8A04"; // amber
+  }
+
+  return "#DC2626"; // red
+}
+
+function getRatingLabel(stadium: StadiumSummary) {
+  if (!stadium.reviewCount || stadium.reviewCount === 0) {
+    return "–";
+  }
+
+  return stadium.averageRating.toFixed(1);
 }
 
 export default function StadiumMap({ stadiums }: Props) {
@@ -32,7 +57,9 @@ export default function StadiumMap({ stadiums }: Props) {
     );
   }
 
-  const mappableStadiums = stadiums.filter(hasCoordinates);
+  const mappableStadiums = stadiums.filter((stadium) => {
+    return getCoordinates(stadium) !== null;
+  });
 
   if (mappableStadiums.length === 0) {
     return (
@@ -43,63 +70,100 @@ export default function StadiumMap({ stadiums }: Props) {
   }
 
   return (
-    <APIProvider apiKey={apiKey}>
-      <div
-        style={{ height: "400px", width: "100%" }}
-        className="rounded-xl overflow-hidden border border-gray-200 mb-6"
-      >
-        <Map
-          defaultCenter={{ lat: 39.5, lng: -98.35 }}
-          defaultZoom={4}
-          gestureHandling="greedy"
+    <div>
+      <APIProvider apiKey={apiKey}>
+        <div
+          style={{ height: "400px", width: "100%" }}
+          className="rounded-xl overflow-hidden border border-gray-200 mb-3"
         >
-          {mappableStadiums.map((stadium) => (
-            <Marker
-              key={stadium.slug}
-              position={{
-                lat: stadium.latitude,
-                lng: stadium.longitude,
-              }}
-              onClick={() => setSelected(stadium)}
-            />
-          ))}
+          <Map
+            defaultCenter={{ lat: 39.5, lng: -98.35 }}
+            defaultZoom={4}
+            gestureHandling="greedy"
+          >
+            {mappableStadiums.map((stadium) => {
+              const coords = getCoordinates(stadium);
+              if (!coords) return null;
 
-          {selected && hasCoordinates(selected) && (
-            <InfoWindow
-              position={{
-                lat: selected.latitude,
-                lng: selected.longitude,
-              }}
-              onCloseClick={() => setSelected(null)}
-            >
-              <div className="p-1 min-w-48">
-                <p className="font-bold text-gray-900 text-sm">
-                  {selected.name}
-                </p>
+              return (
+                <Marker
+                  key={stadium.slug}
+                  position={coords}
+                  onClick={() => setSelected(stadium)}
+                  label={{
+                    text: getRatingLabel(stadium),
+                    color: "#FFFFFF",
+                    fontSize: "11px",
+                    fontWeight: "700",
+                  }}
+                  icon={{
+                    path: "M 0,0 m -12,0 a 12,12 0 1,0 24,0 a 12,12 0 1,0 -24,0",
+                    fillColor: getRatingColor(stadium),
+                    fillOpacity: 1,
+                    strokeColor: "#FFFFFF",
+                    strokeWeight: 3,
+                    scale: 1,
+                  }}
+                />
+              );
+            })}
 
-                <p className="text-xs text-gray-500 mb-2">
-                  {selected.city}, {selected.state}
-                </p>
+            {selected && getCoordinates(selected) && (
+              <InfoWindow
+                position={getCoordinates(selected)!}
+                onCloseClick={() => setSelected(null)}
+              >
+                <div className="p-1 min-w-48">
+                  <p className="font-bold text-gray-900 text-sm">
+                    {selected.name}
+                  </p>
 
-                <p className="text-xs text-gray-500 mb-2">
-                  {selected.reviewCount > 0
-                    ? `${selected.averageRating} / 5 · ${selected.reviewCount} ${
-                        selected.reviewCount === 1 ? "review" : "reviews"
-                      }`
-                    : "No reviews yet"}
-                </p>
+                  <p className="text-xs text-gray-500 mb-2">
+                    {selected.city}, {selected.state}
+                  </p>
 
-                <Link
-                  href={`/stadiums/${selected.slug}`}
-                  className="text-xs text-blue-600 hover:underline font-medium"
-                >
-                  View stadium →
-                </Link>
-              </div>
-            </InfoWindow>
-          )}
-        </Map>
+                  <p className="text-xs text-gray-500 mb-2">
+                    {selected.reviewCount > 0
+                      ? `${selected.averageRating.toFixed(1)} / 5 · ${
+                          selected.reviewCount
+                        } ${selected.reviewCount === 1 ? "review" : "reviews"}`
+                      : "No reviews yet"}
+                  </p>
+
+                  <Link
+                    href={`/stadiums/${selected.slug}`}
+                    className="text-xs text-blue-600 hover:underline font-medium"
+                  >
+                    View stadium →
+                  </Link>
+                </div>
+              </InfoWindow>
+            )}
+          </Map>
+        </div>
+      </APIProvider>
+
+      <div className="flex flex-wrap gap-3 text-xs text-gray-600">
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block w-3 h-3 rounded-full bg-[#15803D]" />
+          <span>4.0–5.0</span>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block w-3 h-3 rounded-full bg-[#CA8A04]" />
+          <span>3.0–3.9</span>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block w-3 h-3 rounded-full bg-[#DC2626]" />
+          <span>Below 3.0</span>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block w-3 h-3 rounded-full bg-[#6B7280]" />
+          <span>No reviews yet</span>
+        </div>
       </div>
-    </APIProvider>
+    </div>
   );
 }
