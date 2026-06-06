@@ -3,9 +3,9 @@ import "./globals.css";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Accessible Stadium Reviews",
+  title: "Accessibly",
   description:
-    "Real accessibility reviews from wheelchair users and disabled fans. Know the stadium experience before you buy accessible seats.",
+    "Reviews written by people with disabilities for people with disabilities. Plan your trip with confidence.",
 };
 
 export default function RootLayout({
@@ -17,29 +17,35 @@ export default function RootLayout({
     <html lang="en">
       <body>
         {/* Navbar */}
-        <header className="border-b border-gray-200 bg-white sticky top-0 z-50">
-          <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+        <header className="sticky top-0 z-50 border-b border-[#E5DED1] bg-[#FAF7F1]/95 backdrop-blur">
+          <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
             {/* Logo / home link */}
             <Link
               href="/"
-              className="font-bold text-gray-900 hover:text-blue-700 transition-colors text-sm sm:text-base"
+              className="flex items-center gap-3 text-gray-950 hover:text-[#1E3A5F] transition-colors"
             >
-              ♿ Accessible Stadium Reviews
+              <span className="h-9 w-9 rounded-xl bg-[#1E3A5F] text-white flex items-center justify-center font-bold text-sm">
+                A
+              </span>
+              <span className="font-bold text-lg sm:text-xl tracking-tight">
+                Accessibly
+              </span>
             </Link>
 
             {/* Nav links */}
             <nav className="flex items-center gap-2 sm:gap-4">
               <Link
                 href="/stadiums"
-                className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                className="text-sm font-medium text-gray-700 hover:text-gray-950 transition-colors"
               >
-                Browse stadiums
+                Browse Stadiums
               </Link>
+
               <Link
                 href="/reviews/new"
-                className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
+                className="rounded-xl bg-[#1E3A5F] px-4 py-2 text-sm font-semibold text-white hover:bg-[#162D49] transition-colors"
               >
-                Write a review
+                Add a review
               </Link>
             </nav>
           </div>
@@ -49,10 +55,10 @@ export default function RootLayout({
         {children}
 
         {/* Footer */}
-        <footer className="border-t border-gray-200 mt-16 py-8 px-4">
-          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-400">
-            <p>♿ Accessible Stadium Reviews</p>
-            <p>Helping disabled fans make informed decisions.</p>
+        <footer className="border-t border-[#E5DED1] bg-[#FAF7F1] mt-16">
+          <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500">
+            <p>Accessibly</p>
+            <p>Created by Ryan Hume - a summer project</p>
           </div>
         </footer>
       </body>
