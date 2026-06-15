@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import Image from "next/image";
 import Link from "next/link";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Accessibly",
@@ -18,32 +19,35 @@ export default function RootLayout({
       <body>
         {/* Navbar */}
         <header className="sticky top-0 z-50 border-b border-[#E5DED1] bg-[#FAF7F1]/95 backdrop-blur">
-          <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
             {/* Logo / home link */}
             <Link
               href="/"
-              className="flex items-center gap-3 text-gray-950 hover:text-[#1E3A5F] transition-colors"
+              className="flex items-center min-w-0 hover:opacity-80 transition-opacity"
+              aria-label="Accessibly home"
             >
-              <span className="h-9 w-9 rounded-xl bg-[#1E3A5F] text-white flex items-center justify-center font-bold text-sm">
-                A
-              </span>
-              <span className="font-bold text-lg sm:text-xl tracking-tight">
-                Accessibly
-              </span>
+              <Image
+                src="/images/accessibly-logo.svg"
+                alt="Accessibly"
+                width={260}
+                height={48}
+                className="h-9 sm:h-10 w-auto max-w-[170px] sm:max-w-[220px]"
+                priority
+              />
             </Link>
 
             {/* Nav links */}
-            <nav className="flex items-center gap-2 sm:gap-4">
+            <nav className="flex items-center gap-2 sm:gap-4 shrink-0">
               <Link
                 href="/stadiums"
-                className="text-sm font-medium text-gray-700 hover:text-gray-950 transition-colors"
+                className="text-sm font-medium text-gray-700 hover:text-gray-950 transition-colors whitespace-nowrap"
               >
                 Browse Stadiums
               </Link>
 
               <Link
                 href="/reviews/new"
-                className="rounded-xl bg-[#1E3A5F] px-4 py-2 text-sm font-semibold text-white hover:bg-[#162D49] transition-colors"
+                className="rounded-xl bg-[#1E3A5F] px-3 sm:px-4 py-2 text-sm font-semibold text-white hover:bg-[#162D49] transition-colors whitespace-nowrap"
               >
                 Add a review
               </Link>
@@ -57,7 +61,20 @@ export default function RootLayout({
         {/* Footer */}
         <footer className="border-t border-[#E5DED1] bg-[#FAF7F1] mt-16">
           <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500">
-            <p>Accessibly</p>
+            <Link
+              href="/"
+              className="flex items-center hover:opacity-80 transition-opacity"
+              aria-label="Accessibly home"
+            >
+              <Image
+                src="/images/accessibly-logo.svg"
+                alt="Accessibly"
+                width={260}
+                height={48}
+                className="h-8 w-auto max-w-[180px]"
+              />
+            </Link>
+
             <p>Created by Ryan Hume - a summer project</p>
           </div>
         </footer>
